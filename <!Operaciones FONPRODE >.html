@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>FONPRODE - Eficacia Nacional</title>
+  <!-- Chart.js para el gráfico -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- IBM Plex Sans (opcional) -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Estilo general */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: rgb(3, 7, 18);
+      color: #fff;
+      font-family: Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+    /* Topbar */
+    #topbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 0;
+      box-sizing: border-box;
+    }
+    #topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+    }
+    #topbar-left .flag {
+      font-size: 1.2rem;
+    }
+    #topbar-left span {
+      font-weight: bold;
+    }
+    #topbar-right {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    /* Cabecera interna */
+    header {
+      width: 100%;
+      text-align: center;
+      padding: 20px 0 10px;
+    }
+    header h1 {
+      margin: 0 0 10px;
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+    header p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+    /* Sección Resumen: 3 columnas */
+    #summary-section {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 20px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    /* Columna 1: Resumen (alineado a la izquierda) */
+    #summary-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      min-width: 250px;
+    }
+    #summary-text h2 {
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    #summary-links {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.9rem;
+      width: 100%;
+    }
+    .interactive-text {
+      cursor: pointer;
+      display: block;
+    }
+    .interactive-text::before {
+      content: "↗ ";
+    }
+    .interactive-text:hover {
+      font-weight: bold;
+    }
+    /* Columna 2: Gráfico */
+    #chart-container {
+      position: relative;
+      width: 350px;
+      height: 350px;
+      max-width: 90vw;
+      max-height: 90vw;
+    }
+    /* Columna 3: Acordeones */
+    #summary-other {
+      max-width: 300px;
+      font-size: 0.85rem;
+    }
+    .accordion-item {
+      margin-bottom: 15px;
+    }
+    .accordion-title {
+      cursor: pointer;
+      display: block;
+      margin: 0 0 5px 0;
+    }
+    .accordion-title::before {
+      content: "↗ ";
+    }
+    .accordion-title:hover {
+      font-weight: bold;
+    }
+    .accordion-content {
+      display: none;
+      margin-left: 15px;
+      line-height: 1.5;
+    }
+    /* Barra de Filtros (2 líneas) */
+    .filter-bar {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px 0;
+      box-sizing: border-box;
+    }
+    .filter-bar-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    /* Iconos en SVG en blanco (usando Feather Icons) */
+    .icon {
+      width: 20px;
+      height: 20px;
+      stroke: #fff;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    /* Estilos para selects e inputs */
+    select, input[type="text"] {
+      background: none;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      padding: 5px;
+      min-width: 120px;
+    }
+    .range-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .range-wrapper label {
+      font-size: 0.8rem;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      background-color: #333;
+      height: 4px;
+      width: 100px;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #8688a0;
+      border: 1px solid #fff;
+    }
+    .range-value {
+      font-size: 0.8rem;
+      min-width: 50px;
+      text-align: right;
+    }
+    /* Botones sin borde, con transparencia */
+    .filter-button {
+      background-color: rgba(255,255,255,0.1);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-button:hover {
+      background-color: rgba(255,255,255,0.2);
+    }
+    /* Resultados: tarjetas en 3 columnas, borde 2px */
+    #results-title {
+      display: none;
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: 20px;
+      text-align: center;
+    }
+    #results-container {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      box-sizing: border-box;
+      margin-bottom: 30px;
+    }
+    .result-card {
+      flex: 0 1 300px;
+      border: 2px solid #fff;
+      border-radius: 4px;
+      padding: 15px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .result-card .money-icon {
+      font-size: 1.4rem;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .result-card .detail-line {
+      font-size: 0.85rem;
+    }
+    /* Pie de página */
+    footer {
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #ccc;
+      padding: 20px 0;
+    }
+    /* Overlay de alerta */
+    #glitch-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 100px;
+      color: #fff;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Topbar -->
+    <div id="topbar">
+      <div id="topbar-left">
+        <span class="flag">🇪🇸</span>
+        <span>Eficacia Nacional</span>
+      </div>
+      <div id="topbar-right">
+        FONPRODE
+      </div>
+    </div>
+    <!-- Cabecera interna -->
+    <header>
+      <h1>Operaciones FONPRODE</h1>
+      <p>Información actualizada: 16/05/2024</p>
+    </header>
+    <!-- Sección Resumen: 3 columnas -->
+    <div id="summary-section">
+      <!-- Columna 1: Resumen (alineado a la izquierda) -->
+      <div id="summary-text">
+        <h2>Resumen de Operaciones</h2>
+        <div id="summary-links">
+          <span class="interactive-text" style="color: #4e79a7;" onclick="filterByCategory('Créditos de Estado')">Créditos de Estado (15)</span>
+          <span class="interactive-text" style="color: #f28e2b;" onclick="filterByCategory('Fondos de Inversión')">Fondos de Inversión (14)</span>
+          <span class="interactive-text" style="color: #e15759;" onclick="filterByCategory('Inclusión Financiera')">Inclusión Financiera (37)</span>
+          <span class="interactive-text" style="color: #76b7b2;" onclick="filterByCategory('Instituciones Internacionales')">Instituciones Internacionales (4)</span>
+        </div>
+      </div>
+      <!-- Columna 2: Gráfico -->
+      <div id="chart-container">
+        <canvas id="operationsChart"></canvas>
+      </div>
+      <!-- Columna 3: Acordeones -->
+      <div id="summary-other">
+        <div class="accordion-item">
+          <div class="accordion-title" onclick="toggleAccordion(this)">¿Qué es FONPRODE y cómo opera?</div>
+          <div class="accordion-content">
+            <p>El FONPRODE, creado en 2010 y gestionado por la AECID, es el principal instrumento financiero de la Cooperación Española para el desarrollo sostenible. Financia operaciones tanto reembolsables como no reembolsables, con el objetivo de erradicar la pobreza y promover el desarrollo en países socios.</p>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-title" onclick="toggleAccordion(this)">Relación con "AECID en Cifras 2022"</div>
+          <div class="accordion-content">
+            <p>Los 414.6 millones (337.7 del MAUC y 65.1 de la UE) son el combustible financiero del Instituto/AECID, parte del cual puede canalizarse a través de FONPRODE.</p>
+            <p>Los 324.1 millones en subvenciones son mayormente donaciones no reembolsables, y parte de ellos pueden venir de FONPRODE.</p>
+            <p>El presupuesto ejecutado de 561.6 millones incluye operaciones de FONPRODE y otros instrumentos.</p>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-title" onclick="toggleAccordion(this)">¿Cuánto de lo que da AECID, AOD y FONPRODE es no reembolsable?</div>
+          <div class="accordion-content">
+            <p>FONPRODE financia operaciones reembolsables y no reembolsables. En 2022, su dotación fue de 219 millones, pero no todo se ejecuta el mismo año. En F.14.2.1, los 324.1 millones son no reembolsables, pudiendo incluir aportaciones de FONPRODE y cooperación directa de AECID.</p>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-title" id="alertTrigger" onclick="toggleAccordion(this); triggerAlertFacha();">Canalizando 324M€ sin reembolso ¿es FONPRODE un canal tipo USAID?</div>
+          <div class="accordion-content">
+            <p>Los ingresos confirman que el Instituto es un canal para transferir cientos de millones, principalmente del MAUC, hacia programas de ayuda.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros (2 líneas) -->
+    <div class="filter-bar">
+      <!-- Primera línea: Categoría, País, Sector -->
+      <div class="filter-bar-line">
+        <div class="filter-group">
+          <!-- Icono de categoría (usando SVG de Feather "tag") -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
+            <path d="M20.59 13.41l-8-8a2 2 0 0 0-2.83 0l-8 8a2 2 0 0 0 0 2.83l8 8a2 2 0 0 0 2.83 0l8-8a2 2 0 0 0 0-2.83z"></path>
+            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+          </svg>
+          <select id="filter-category">
+            <option value="">Categoría: Todas</option>
+            <option value="Créditos de Estado">Créditos de Estado</option>
+            <option value="Fondos de Inversión">Fondos de Inversión</option>
+            <option value="Inclusión Financiera">Inclusión Financiera</option>
+            <option value="Instituciones Internacionales">Instituciones Internacionales</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <!-- Icono de país (usando SVG de Feather "globe") -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <line x1="12" y1="2" x2="12" y2="22"></line>
+          </svg>
+          <select id="filter-country">
+            <option value="">País: Todos</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <!-- Icono de sector (usando SVG de Feather "briefcase") -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 3H8v4h8V3z"></path>
+          </svg>
+          <select id="filter-sector">
+            <option value="">Sector: Todos</option>
+          </select>
+        </div>
+      </div>
+      <!-- Segunda línea: Buscador, rango, botones -->
+      <div class="filter-bar-line">
+        <div class="filter-group">
+          <!-- Icono de lupa (SVG de Feather "search") -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="filter-search" placeholder="Buscar...">
+        </div>
+        <div class="range-wrapper">
+          <label for="rangeMin">Min:</label>
+          <input type="range" id="rangeMin" min="0" value="0" oninput="updateRangeValue('rangeMin', 'rangeMinLabel')">
+          <span class="range-value" id="rangeMinLabel">0 €</span>
+        </div>
+        <div class="range-wrapper">
+          <label for="rangeMax">Max:</label>
+          <input type="range" id="rangeMax" min="0" value="1000000" oninput="updateRangeValue('rangeMax', 'rangeMaxLabel')">
+          <span class="range-value" id="rangeMaxLabel">1.000.000 €</span>
+        </div>
+        <button class="filter-button" onclick="applyFilters()">
+          <!-- Icono check (SVG de Feather "check") -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Filtrar
+        </button>
+        <button class="filter-button" onclick="clearFilters()">
+          <!-- Icono X (SVG de Feather "x") -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <!-- Título de resultados y contenedor -->
+    <h2 id="results-title">Resultados</h2>
+    <div id="results-container"></div>
+  </div>
+
+  <!-- Overlay de alerta (pop-up) -->
+  <div id="glitch-overlay">¡¡☠ ALERTA FACHA ☠!!</div>
+
+  <footer>
+    iniciativa ciudadana. datos obtenidos de webs públicas.
+  </footer>
+
+  <script>
+    /* Acordeón */
+    function toggleAccordion(elem) {
+      const content = elem.nextElementSibling;
+      content.style.display = (content.style.display === "block") ? "none" : "block";
+    }
+    /* Nueva función para el efecto de alerta */
+    function triggerAlertFacha() {
+      // Muestra el overlay (pop-up)
+      const overlay = document.getElementById("glitch-overlay");
+      overlay.style.display = "flex";
+      // Inicia el efecto de desaparición de letras
+      startLetterVanish();
+    }
+    /* Función para obtener todos los nodos de texto (excluyendo el overlay) */
+    function getAllTextNodes() {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: function(node) {
+          if (document.getElementById("glitch-overlay") && document.getElementById("glitch-overlay").contains(node.parentNode)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          if (node.textContent.trim() === "") {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      const nodes = [];
+      while (walker.nextNode()) {
+        nodes.push(walker.currentNode);
+      }
+      return nodes;
+    }
+    /* Función que elimina letras aleatoriamente de los nodos de texto */
+    function startLetterVanish() {
+      let textNodes = getAllTextNodes();
+      const interval = setInterval(() => {
+        if(textNodes.length === 0) {
+          clearInterval(interval);
+          return;
+        }
+        const index = Math.floor(Math.random() * textNodes.length);
+        let node = textNodes[index];
+        let text = node.textContent;
+        if(text.length > 0) {
+          const charIndex = Math.floor(Math.random() * text.length);
+          node.textContent = text.substring(0, charIndex) + text.substring(charIndex+1);
+        }
+        if(node.textContent.trim() === "") {
+          textNodes.splice(index, 1);
+        }
+      }, 30);
+    }
+    /* DATOS combinados */
+    const dataEstado = [
+      { country: "Ecuador", proyecto: "Proyecto de Irrigación tecnificada...", sector: "Agrícola", amount: 18100000 },
+      { country: "Ecuador", proyecto: "Programa de saneamiento de agua potable...", sector: "Agua potable y saneamiento", amount: 15385000 },
+      { country: "El Salvador", proyecto: "Programa Caminos Rurales", sector: "Transporte", amount: 27150000 },
+      { country: "Níger", proyecto: "Proyecto de apoyo a la iniciativa...", sector: "Agrícola", amount: 15000000 },
+      { country: "Panamá", proyecto: "Programa de Saneamiento de los Distritos...", sector: "Agua potable y saneamiento", amount: 45250000 },
+      { country: "Panamá", proyecto: "Programa de acceso universal a la energía", sector: "Energético", amount: 13575000 },
+      { country: "Paraguay", proyecto: "Programa de Mejoramiento de caminos...", sector: "Transporte", amount: 22625000 },
+      { country: "Paraguay", proyecto: "Programa Agua potable y Saneamiento...", sector: "Abastecimiento de agua potable y saneamiento", amount: 18100000 },
+      { country: "Perú", proyecto: "Programa para recuperar y poner en valor...", sector: "Desarrollo y gestión urbanos", amount: 9050000 },
+      { country: "República Dominicana", proyecto: "Programa de saneamiento universal...", sector: "Agua potable y saneamiento", amount: 45250000 },
+      { country: "República Dominicana", proyecto: "Programa de gestión integral y sostenible...", sector: "Desarrollo y gestión urbanos", amount: 18100000 },
+      { country: "Senegal", proyecto: "Proyecto de apoyo a la iniciativa...", sector: "Agrícola", amount: 15000000 },
+      { country: "Senegal", proyecto: "Proyecto de promoción de gestión integrada...", sector: "Desarrollo y gestión urbanos", amount: 50000000 },
+      { country: "Senegal", proyecto: "Proyecto de apoyo al desarrollo al emprendimiento...", sector: "Agrícola", amount: 9276250 },
+      { country: "Tanzania", proyecto: "Proyecto de desarrollo de la cuenca del Río Msimbazi...", sector: "Desarrollo y gestión urbanos", amount: 27150000 }
+    ];
+    const dataFondos = [
+      { fondo: "African Guarantee Fund for SME LLC", country: "África Subsahariana", sector: "PYMES", amount: 20000000 },
+      { fondo: "Fiduciaria Bancolombia", country: "América Latina y Caribe", sector: "PYMES", amount: 2743351 },
+      { fondo: "Fondo de capital privado Amerigo Ventures Pacífico", country: "América Latina y Caribe", sector: "Digital", amount: 13575000 },
+      { fondo: "Fondo HURUMA", country: "Global (países del CAD)", sector: "Agrícola y PYMES", amount: 20000000 },
+      { fondo: "Fondo Moringa", country: "América Latina y Caribe / África Subsahariana", sector: "Agroforestal", amount: 15000000 },
+      { fondo: "Fundo de investimento Privado-Angola", country: "Angola", sector: "PYMES", amount: 5430000 },
+      { fondo: "GEF Africa Sustainable Forestry Fund LP", country: "África Subsahariana", sector: "Explotaciones forestales", amount: 18100000 },
+      { fondo: "Global Impact Funds Management", country: "Global (países del CAD)", sector: "Financiero", amount: 12500000 },
+      { fondo: "Latin Renewables Infrastructure Fund", country: "América Latina y Caribe", sector: "Energías renovables", amount: 11312500 },
+      { fondo: "Mediterrania Capital IV", country: "África Subsahariana y Norte de África", sector: "PYMES", amount: 30000000 },
+      { fondo: "MGM Sustainable Energy Fund", country: "América Latina y Caribe", sector: "Energías renovables", amount: 10860000 },
+      { fondo: "Phatisa Fund Managers LTC", country: "África Subsahariana", sector: "Agrícola", amount: 36200000 },
+      { fondo: "Regional MSME Investment Fund for Sub-saharan Africa (REGMIFA) (1)", country: "África Subsahariana", sector: "Servicios financieros para pymes", amount: 10275630 },
+      { fondo: "Regional MSME Investment Fund for Sub-saharan Africa (REGMIFA) (2)", country: "África Subsahariana", sector: "Servicios financieros para pymes", amount: 55000000 }
+    ];
+    const dataInclusion = [
+      { entidad: "Acceso Crediticio S.A.", country: "Perú", sector: "MIPYME", amount: 9050000 },
+      { entidad: "Albanian Savings and Credit Union (1)", country: "Albania", sector: "MIPYME", amount: 5000000 },
+      { entidad: "Albanian Savings and Credit Union (2)", country: "Albania", sector: "MIPYME", amount: 10000000 },
+      { entidad: "AMK Microfinance institution PLC (1)", country: "Camboya", sector: "Servicios financieros para microempresas", amount: 3650000 },
+      { entidad: "AMK Microfinance institution PLC (2)", country: "Camboya", sector: "Servicios financieros para microempresas", amount: 10000000 },
+      { entidad: "Asociación Familia y Medio ambiente", country: "Honduras", sector: "Servicios financieros para MIPYMES", amount: 1810000 },
+      { entidad: "Asociación Fondo Nicaragüense para el Desarrollo Comunitario (PRESTANIC) (1)", country: "Nicaragua", sector: "Servicios financieros en áreas rurales", amount: 1000000 },
+      { entidad: "Asociación Fondo Nicaragüense para el Desarrollo Comunitario (PRESTANIC) (2)", country: "Nicaragua", sector: "Servicios financieros en áreas rurales", amount: 3000000 },
+      { entidad: "Association Soro Yiriwaso", country: "Mali", sector: "Servicios microfinancieros...", amount: 1000000 },
+      { entidad: "Banco Azul de El Salvador", country: "El Salvador", sector: "Servicios financieros para PYMES", amount: 13575000 },
+      { entidad: "Banco de Desarrollo de El Salvador", country: "El Salvador", sector: "Sector financiero para MIPYMES", amount: 13575000 },
+      { entidad: "Banco Desarrollo de los Pueblos S.A.", country: "Ecuador", sector: "Sector de PYMES en áreas rurales", amount: 7000000 },
+      { entidad: "Banco Hondureño del Café", country: "Honduras", sector: "Servicios microfinancieros y sector rural", amount: 4525000 },
+      { entidad: "Banco Improsa S.A.", country: "Costa Rica", sector: "MIPYME", amount: 18100000 },
+      { entidad: "Banco Solidario S.A.", country: "Ecuador", sector: "Servicios financieros para microempresas y sector industrial", amount: 7500000 },
+      { entidad: "Banco VisionFund", country: "Ecuador", sector: "Sector financiero para MIPYMES", amount: 5200000 },
+      { entidad: "Central Empresarial Solidaria S.A.", country: "Panamá", sector: "Sector financiero para MIPYMES", amount: 5600000 },
+      { entidad: "CFE Túnez", country: "Túnez", sector: "Servicios financieros para PYMES", amount: 3000000 },
+      { entidad: "Cooperativa de ahorro y crédito Fondesurco", country: "Perú", sector: "Servicios financieros para MIPYMES", amount: 2715000 },
+      { entidad: "Cooperativa de ahorro y crédito Norandino", country: "Perú", sector: "Servicios financieros para MIPYMES", amount: 3620000 },
+      { entidad: "Corporación de crédito Contactar", country: "Colombia", sector: "Servicios financieros para microempresas en áreas rurales", amount: 13575000 },
+      { entidad: "Empresa Crédito Alternativa", country: "Perú", sector: "Sector de PYMES en áreas rurales", amount: 2715000 },
+      { entidad: "Fondation Arrawaj", country: "Marruecos", sector: "Servicios financieros para PYMES", amount: 10000000 },
+      { entidad: "Fondo para el Desarrollo Solidario (FONDESOL)", country: "Guatemala", sector: "Servicios financieros para el sector rural", amount: 2000000 },
+      { entidad: "Fundación para el Desarrollo de Honduras (FUNED)", country: "Honduras", sector: "MIPYME", amount: 1150000 },
+      { entidad: "Fundación para la Promoción de la Pequeña y Microempresa José María Covelo", country: "Honduras", sector: "PYMES", amount: 4525000 },
+      { entidad: "Haiti SME Development Fund", country: "Haití", sector: "PYMES", amount: 63259500 },
+      { entidad: "Hattha Bank PLC", country: "Camboya", sector: "Servicios financieros para microempresas en áreas rurales", amount: 3500000 },
+      { entidad: "KixiCrédito Angola S.A.", country: "Angola", sector: "Servicios financieros para microempresas en áreas rurales", amount: 1810000 },
+      { entidad: "Microfinanciera Fundeser (1)", country: "Nicaragua", sector: "Servicios financieros en áreas rurales", amount: 750000 },
+      { entidad: "Microfinanciera Fundeser (2)", country: "Nicaragua", sector: "Servicios financieros en áreas rurales", amount: 3000000 },
+      { entidad: "Microfinanzas del Uruguay S.A.", country: "Uruguay", sector: "Servicios financieros para microempresas", amount: 3000000 },
+      { entidad: "Mikrokreditna Fondacija PRIZMA", country: "Bosnia-Herzegovina", sector: "Sector financiero", amount: 4000000 },
+      { entidad: "Sociedad de Ahorro y Crédito Apoyo integral S.A.", country: "El Salvador", sector: "Servicios financieros para microempresas en áreas rurales", amount: 4525000 },
+      { entidad: "Sociedad para la inclusión de la Microempresa en Centro América y el Caribe", country: "América Latina y Caribe", sector: "Servicios financieros para MIPYMES", amount: 2715000 },
+      { entidad: "The Lebanese Association for Development (Al Majmoua)", country: "Líbano", sector: "Sector de microfinanzas", amount: 5000000 },
+      { entidad: "U-IMCEC Senegal", country: "Senegal", sector: "Servicios financieros para microempresas", amount: 2000000 }
+    ];
+    const dataInstituciones = [
+      { institucion: "Banco Europeo de Inversiones (BEI)", country: "Mediterráneo (cuenca sur)", sector: "Inversiones para el desarrollo del sector privado", amount: 100000000 },
+      { institucion: "Fondo Internacional para el Desarrollo Agrícola (FIDA)", country: "Global (países del CAD)", sector: "Desarrollo agrícola y seguridad alimentaria", amount: 300000000 },
+      { institucion: "Organización de Estados Iberoamericanos (1)", country: "España", sector: "Sector de la educación", amount: 4500000 },
+      { institucion: "Organización de Estados Iberoamericanos (2)", country: "España", sector: "Sector de la educación", amount: 4500000 }
+    ];
+    let masterData = [];
+    dataEstado.forEach(item => {
+      masterData.push({
+        nombre: item.proyecto,
+        country: item.country,
+        sector: item.sector,
+        amount: item.amount,
+        categoria: "Créditos de Estado"
+      });
+    });
+    dataFondos.forEach(item => {
+      masterData.push({
+        nombre: item.fondo,
+        country: item.country,
+        sector: item.sector,
+        amount: item.amount,
+        categoria: "Fondos de Inversión"
+      });
+    });
+    dataInclusion.forEach(item => {
+      masterData.push({
+        nombre: item.entidad,
+        country: item.country,
+        sector: item.sector,
+        amount: item.amount,
+        categoria: "Inclusión Financiera"
+      });
+    });
+    dataInstituciones.forEach(item => {
+      masterData.push({
+        nombre: item.institucion,
+        country: item.country,
+        sector: item.sector,
+        amount: item.amount,
+        categoria: "Instituciones Internacionales"
+      });
+    });
+    const totalEuros = masterData.reduce((acc, item) => acc + item.amount, 0);
+    function formatMoney(amount) {
+      if (amount >= 1_000_000_000) {
+        return "€" + (amount / 1_000_000_000).toFixed(2) + "B";
+      } else if (amount >= 1_000_000) {
+        return "€" + (amount / 1_000_000).toFixed(2) + "M";
+      } else if (amount >= 1_000) {
+        return "€" + (amount / 1_000).toFixed(2) + "K";
+      } else {
+        return "€" + amount.toLocaleString("es-ES");
+      }
+    }
+    let maxAmountGlobal = 0;
+    function initRangeSliders() {
+      maxAmountGlobal = masterData.reduce((acc, curr) => Math.max(acc, curr.amount), 0);
+      document.getElementById("rangeMin").max = maxAmountGlobal;
+      document.getElementById("rangeMax").max = maxAmountGlobal;
+      document.getElementById("rangeMax").value = maxAmountGlobal;
+      updateRangeValue("rangeMin", "rangeMinLabel");
+      document.getElementById("rangeMaxLabel").textContent = maxAmountGlobal.toLocaleString("es-ES") + " €";
+    }
+    function updateRangeValue(rangeId, labelId) {
+      const val = parseInt(document.getElementById(rangeId).value);
+      document.getElementById(labelId).textContent = val.toLocaleString("es-ES") + " €";
+    }
+    function populateFilterOptions() {
+      const countrySet = new Set();
+      const sectorSet = new Set();
+      masterData.forEach(item => {
+        countrySet.add(item.country);
+        sectorSet.add(item.sector);
+      });
+      const countrySelect = document.getElementById("filter-country");
+      const sectorSelect = document.getElementById("filter-sector");
+      countrySet.forEach(c => {
+        let opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = "País: " + c;
+        countrySelect.appendChild(opt);
+      });
+      sectorSet.forEach(s => {
+        let opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = "Sector: " + s;
+        sectorSelect.appendChild(opt);
+      });
+    }
+    function applyFilters() {
+      const catValue = document.getElementById("filter-category").value;
+      const searchText = document.getElementById("filter-search").value.toLowerCase().trim();
+      const countryValue = document.getElementById("filter-country").value;
+      const sectorValue = document.getElementById("filter-sector").value;
+      const minVal = parseInt(document.getElementById("rangeMin").value) || 0;
+      const maxVal = parseInt(document.getElementById("rangeMax").value) || maxAmountGlobal;
+      const filtered = masterData.filter(item => {
+        return (catValue === "" || item.categoria === catValue) &&
+               (searchText === "" || item.nombre.toLowerCase().includes(searchText)) &&
+               (countryValue === "" || item.country === countryValue) &&
+               (sectorValue === "" || item.sector === sectorValue) &&
+               (item.amount >= minVal && item.amount <= maxVal);
+      });
+      const sumFiltered = filtered.reduce((acc, it) => acc + it.amount, 0);
+      const resultsTitle = document.getElementById("results-title");
+      resultsTitle.style.display = "block";
+      resultsTitle.textContent = `Resultados (${formatMoney(sumFiltered)})`;
+      renderResults(filtered);
+    }
+    function clearFilters() {
+      document.getElementById("filter-category").value = "";
+      document.getElementById("filter-search").value = "";
+      document.getElementById("filter-country").value = "";
+      document.getElementById("filter-sector").value = "";
+      document.getElementById("rangeMin").value = 0;
+      document.getElementById("rangeMax").value = maxAmountGlobal;
+      updateRangeValue("rangeMin", "rangeMinLabel");
+      document.getElementById("rangeMaxLabel").textContent = maxAmountGlobal.toLocaleString("es-ES") + " €";
+      document.getElementById("results-title").style.display = "none";
+      document.getElementById("results-container").innerHTML = "";
+    }
+    function renderResults(data) {
+      const container = document.getElementById("results-container");
+      container.innerHTML = "";
+      data.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "result-card";
+        const moneyStr = formatMoney(item.amount);
+        const moneyDiv = document.createElement("div");
+        moneyDiv.className = "money-icon";
+        moneyDiv.textContent = "💶 " + moneyStr;
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "detail-line";
+        nameDiv.innerHTML = `<strong>${item.nombre}</strong>`;
+        const countryDiv = document.createElement("div");
+        countryDiv.className = "detail-line";
+        countryDiv.textContent = `País: ${item.country}`;
+        const sectorDiv = document.createElement("div");
+        sectorDiv.className = "detail-line";
+        sectorDiv.textContent = `Sector: ${item.sector}`;
+        const catDiv = document.createElement("div");
+        catDiv.className = "detail-line";
+        catDiv.textContent = `Categoría: ${item.categoria}`;
+        card.appendChild(moneyDiv);
+        card.appendChild(nameDiv);
+        card.appendChild(countryDiv);
+        card.appendChild(sectorDiv);
+        card.appendChild(catDiv);
+        container.appendChild(card);
+      });
+    }
+    function filterByCategory(cat) {
+      document.getElementById("filter-category").value = cat;
+      applyFilters();
+    }
+    /* Efecto de pop-up con "ALERTA FACHA" */
+    function triggerAlertFacha() {
+      const overlay = document.getElementById("glitch-overlay");
+      overlay.style.display = "flex";
+      // Inicia el efecto: las letras del resto de la web desaparecerán aleatoriamente
+      startLetterVanish();
+    }
+    /* Obtener todos los nodos de texto (excluyendo el overlay) */
+    function getAllTextNodes() {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: function(node) {
+          if (document.getElementById("glitch-overlay").contains(node.parentNode)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          if (node.textContent.trim() === "") {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      const nodes = [];
+      while (walker.nextNode()) {
+        nodes.push(walker.currentNode);
+      }
+      return nodes;
+    }
+    /* Función para hacer desaparecer letras aleatoriamente */
+    function startLetterVanish() {
+      let textNodes = getAllTextNodes();
+      const interval = setInterval(() => {
+        if (textNodes.length === 0) {
+          clearInterval(interval);
+          return;
+        }
+        const index = Math.floor(Math.random() * textNodes.length);
+        let node = textNodes[index];
+        let text = node.textContent;
+        if (text.length > 0) {
+          const charIndex = Math.floor(Math.random() * text.length);
+          node.textContent = text.substring(0, charIndex) + text.substring(charIndex + 1);
+        }
+        if (node.textContent.trim() === "") {
+          textNodes.splice(index, 1);
+        }
+      }, 30);
+    }
+    /* Gráfico de dona con texto en el centro */
+    document.addEventListener("DOMContentLoaded", function() {
+      populateFilterOptions();
+      initRangeSliders();
+      const centerTextPlugin = {
+        id: 'centerText',
+        beforeDraw(chart) {
+          const { ctx, chartArea: { width, height } } = chart;
+          ctx.save();
+          ctx.font = 'bold 18px Helvetica, Arial, sans-serif';
+          ctx.fillStyle = '#fff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(formatMoney(totalEuros), width / 2, height / 2);
+        }
+      };
+      const ctx = document.getElementById("operationsChart").getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Créditos de Estado', 'Fondos de Inversión', 'Inclusión Financiera', 'Instituciones Internacionales'],
+          datasets: [{
+            data: [15, 14, 37, 4],
+            backgroundColor: ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '70%',
+          plugins: {
+            legend: { display: false },
+            title: { display: false }
+          },
+          onClick: (evt, elements) => {
+            if (elements.length > 0) {
+              const index = elements[0].index;
+              const categoryMap = {
+                0: 'Créditos de Estado',
+                1: 'Fondos de Inversión',
+                2: 'Inclusión Financiera',
+                3: 'Instituciones Internacionales'
+              };
+              filterByCategory(categoryMap[index]);
+            }
+          }
+        },
+        plugins: [centerTextPlugin]
+      });
+    });
+  </script>
+</body>
+</html>
